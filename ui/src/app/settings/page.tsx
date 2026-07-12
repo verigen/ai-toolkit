@@ -69,6 +69,25 @@ export default function Settings() {
                 </div>
 
                 <div>
+                  <label htmlFor="OPENAI_API_KEY" className="block text-sm font-medium mb-2">
+                    OpenAI-Compatible API Key
+                    <div className="text-gray-500 text-sm ml-1">
+                      Used by the OpenAI-compatible captioner to authenticate to the API base URL
+                      configured on the captioning job. Leave empty for local servers (e.g. llama.cpp).
+                    </div>
+                  </label>
+                  <input
+                    type="password"
+                    id="OPENAI_API_KEY"
+                    name="OPENAI_API_KEY"
+                    value={settings.OPENAI_API_KEY}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-transparent"
+                    placeholder="Enter your OpenAI-compatible API key"
+                  />
+                </div>
+
+                <div>
                   <label htmlFor="TRAINING_FOLDER" className="block text-sm font-medium mb-2">
                     Training Folder Path
                     <div className="text-gray-500 text-sm ml-1">

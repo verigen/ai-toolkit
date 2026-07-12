@@ -9,78 +9,25 @@ export const flushCache = () => {
   myCache.flushAll();
 };
 
-export const getDatasetsRoot = async () => {
-  const key = 'DATASETS_FOLDER';
-  let datasetsPath = myCache.get(key) as string;
-  if (datasetsPath) {
-    return datasetsPath;
+const getCachedSetting = async (key: string, defaultValue: string) => {
+  let value = myCache.get(key) as string;
+  if (value) {
+    return value;
   }
   let row = await prisma.settings.findFirst({
-    where: {
-      key: 'DATASETS_FOLDER',
-    },
+    where: { key },
   });
-  datasetsPath = defaultDatasetsFolder;
-  if (row?.value && row.value !== '') {
-    datasetsPath = row.value;
-  }
-  myCache.set(key, datasetsPath);
-  return datasetsPath as string;
+  value = row?.value && row.value !== '' ? row.value : defaultValue;
+  myCache.set(key, value);
+  return value;
 };
 
-export const getTrainingFolder = async () => {
-  const key = 'TRAINING_FOLDER';
-  let trainingRoot = myCache.get(key) as string;
-  if (trainingRoot) {
-    return trainingRoot;
-  }
-  let row = await prisma.settings.findFirst({
-    where: {
-      key: key,
-    },
-  });
-  trainingRoot = defaultTrainFolder;
-  if (row?.value && row.value !== '') {
-    trainingRoot = row.value;
-  }
-  myCache.set(key, trainingRoot);
-  return trainingRoot as string;
-};
+export const getDatasetsRoot = async () => getCachedSetting('DATASETS_FOLDER', defaultDatasetsFolder);
 
-export const getHFToken = async () => {
-  const key = 'HF_TOKEN';
-  let token = myCache.get(key) as string;
-  if (token) {
-    return token;
-  }
-  let row = await prisma.settings.findFirst({
-    where: {
-      key: key,
-    },
-  });
-  token = '';
-  if (row?.value && row.value !== '') {
-    token = row.value;
-  }
-  myCache.set(key, token);
-  return token;
-};
+export const getTrainingFolder = async () => getCachedSetting('TRAINING_FOLDER', defaultTrainFolder);
 
-export const getDataRoot = async () => {
-  const key = 'DATA_ROOT';
-  let dataRoot = myCache.get(key) as string;
-  if (dataRoot) {
-    return dataRoot;
-  }
-  let row = await prisma.settings.findFirst({
-    where: {
-      key: key,
-    },
-  });
-  dataRoot = defaultDataRoot;
-  if (row?.value && row.value !== '') {
-    dataRoot = row.value;
-  }
-  myCache.set(key, dataRoot);
-  return dataRoot;
-};
+export const getHFToken = async () => getCachedSetting('HF_TOKEN', '');
+
+export const getOpenAIApiKey = async () => getCachedSetting('OPENAI_API_KEY', '');
+
+export const getDataRoot = async () => getCachedSetting('DATA_ROOT', defaultDataRoot);
