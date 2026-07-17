@@ -27,7 +27,7 @@ export default function Settings() {
       });
   };
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
     setSettings(prev => ({ ...prev, [name]: value }));
   };
@@ -84,6 +84,62 @@ export default function Settings() {
                     onChange={handleChange}
                     className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-transparent"
                     placeholder="Enter your OpenAI-compatible API key"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="OPENAI_REFINE_BASE_URL" className="block text-sm font-medium mb-2">
+                    Refinement API Base URL
+                    <div className="text-gray-500 text-sm ml-1">
+                      OpenAI-compatible base URL used by the &quot;Refine with LLM&quot; button in the dataset image
+                      viewer (e.g. a local llama.cpp server).
+                    </div>
+                  </label>
+                  <input
+                    type="text"
+                    id="OPENAI_REFINE_BASE_URL"
+                    name="OPENAI_REFINE_BASE_URL"
+                    value={settings.OPENAI_REFINE_BASE_URL}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-transparent"
+                    placeholder="http://localhost:8080/v1"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="OPENAI_REFINE_MODEL" className="block text-sm font-medium mb-2">
+                    Refinement Model Name
+                    <div className="text-gray-500 text-sm ml-1">
+                      Model name to send to the refinement API base URL above.
+                    </div>
+                  </label>
+                  <input
+                    type="text"
+                    id="OPENAI_REFINE_MODEL"
+                    name="OPENAI_REFINE_MODEL"
+                    value={settings.OPENAI_REFINE_MODEL}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-transparent"
+                    placeholder="gpt-4o"
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="OPENAI_REFINE_SYSTEM_PROMPT" className="block text-sm font-medium mb-2">
+                    Refinement System Prompt
+                    <div className="text-gray-500 text-sm ml-1">
+                      System prompt sent along with the image, current caption, and your instruction when refining a
+                      caption. Leave blank to use the built-in default.
+                    </div>
+                  </label>
+                  <textarea
+                    id="OPENAI_REFINE_SYSTEM_PROMPT"
+                    name="OPENAI_REFINE_SYSTEM_PROMPT"
+                    value={settings.OPENAI_REFINE_SYSTEM_PROMPT}
+                    onChange={handleChange}
+                    rows={5}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-transparent"
+                    placeholder="You are helping refine image captions..."
                   />
                 </div>
 

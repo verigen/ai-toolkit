@@ -8,6 +8,9 @@ export interface Settings {
   TRAINING_FOLDER: string;
   DATASETS_FOLDER: string;
   OPENAI_API_KEY: string;
+  OPENAI_REFINE_BASE_URL: string;
+  OPENAI_REFINE_MODEL: string;
+  OPENAI_REFINE_SYSTEM_PROMPT: string;
 }
 
 export default function useSettings() {
@@ -16,6 +19,9 @@ export default function useSettings() {
     TRAINING_FOLDER: '',
     DATASETS_FOLDER: '',
     OPENAI_API_KEY: '',
+    OPENAI_REFINE_BASE_URL: '',
+    OPENAI_REFINE_MODEL: '',
+    OPENAI_REFINE_SYSTEM_PROMPT: '',
   });
   const [isSettingsLoaded, setIsLoaded] = useState(false);
   useEffect(() => {
@@ -29,6 +35,9 @@ export default function useSettings() {
           TRAINING_FOLDER: data.TRAINING_FOLDER || '',
           DATASETS_FOLDER: data.DATASETS_FOLDER || '',
           OPENAI_API_KEY: data.OPENAI_API_KEY || '',
+          OPENAI_REFINE_BASE_URL: data.OPENAI_REFINE_BASE_URL || '',
+          OPENAI_REFINE_MODEL: data.OPENAI_REFINE_MODEL || '',
+          OPENAI_REFINE_SYSTEM_PROMPT: data.OPENAI_REFINE_SYSTEM_PROMPT || '',
         });
         setIsLoaded(true);
       })

@@ -27,7 +27,15 @@ export async function GET() {
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { HF_TOKEN, TRAINING_FOLDER, DATASETS_FOLDER, OPENAI_API_KEY } = body;
+    const {
+      HF_TOKEN,
+      TRAINING_FOLDER,
+      DATASETS_FOLDER,
+      OPENAI_API_KEY,
+      OPENAI_REFINE_BASE_URL,
+      OPENAI_REFINE_MODEL,
+      OPENAI_REFINE_SYSTEM_PROMPT,
+    } = body;
 
     // Upsert all settings
     await Promise.all([
@@ -50,6 +58,21 @@ export async function POST(request: Request) {
         where: { key: 'OPENAI_API_KEY' },
         update: { value: OPENAI_API_KEY },
         create: { key: 'OPENAI_API_KEY', value: OPENAI_API_KEY },
+      }),
+      prisma.settings.upsert({
+        where: { key: 'OPENAI_REFINE_BASE_URL' },
+        update: { value: OPENAI_REFINE_BASE_URL },
+        create: { key: 'OPENAI_REFINE_BASE_URL', value: OPENAI_REFINE_BASE_URL },
+      }),
+      prisma.settings.upsert({
+        where: { key: 'OPENAI_REFINE_MODEL' },
+        update: { value: OPENAI_REFINE_MODEL },
+        create: { key: 'OPENAI_REFINE_MODEL', value: OPENAI_REFINE_MODEL },
+      }),
+      prisma.settings.upsert({
+        where: { key: 'OPENAI_REFINE_SYSTEM_PROMPT' },
+        update: { value: OPENAI_REFINE_SYSTEM_PROMPT },
+        create: { key: 'OPENAI_REFINE_SYSTEM_PROMPT', value: OPENAI_REFINE_SYSTEM_PROMPT },
       }),
     ]);
 

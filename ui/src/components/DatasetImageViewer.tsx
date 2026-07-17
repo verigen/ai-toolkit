@@ -51,6 +51,11 @@ export default function DatasetImageViewer({
   const savedCaptionRef = useRef<string>('');
   const currentImgPathRef = useRef<string | null>(null);
   const captionAbortRef = useRef<AbortController | null>(null);
+  const [refinePrompt, setRefinePrompt] = useState('');
+  const [refinePreview, setRefinePreview] = useState<string | null>(null);
+  const [isRefining, setIsRefining] = useState(false);
+  const [refineError, setRefineError] = useState<string | null>(null);
+  const refineAbortRef = useRef<AbortController | null>(null);
 
   const isIdeogram = useMemo(() => isIdeogramCaption(caption), [caption]);
 
@@ -60,6 +65,19 @@ export default function DatasetImageViewer({
   useEffect(() => {
     setSelectedBoxIndex(null);
     setIsDrawing(false);
+  }, [imgPath]);
+
+  // Reset the refinement prompt/preview whenever the image changes, and abort
+  // any in-flight refine request on image change or unmount so a stale
+  // response can never leak onto a different image.
+  useEffect(() => {
+    setRefinePrompt('');
+    setRefinePreview(null);
+    setIsRefining(false);
+    setRefineError(null);
+    return () => {
+      refineAbortRef.current?.abort();
+    };
   }, [imgPath]);
 
   // Default to showing the editable boxes when an Ideogram caption is present.
@@ -133,6 +151,47 @@ export default function DatasetImageViewer({
     if (!imgPath) return;
     saveCaptionForPath(imgPath, caption, savedCaption);
   }, [imgPath, caption, savedCaption, saveCaptionForPath]);
+
+  const onRefine = useCallback(() => {
+    if (!imgPath || !refinePrompt.trim() || isRefining) return;
+    refineAbortRef.current?.abort();
+    const controller = new AbortController();
+    refineAbortRef.current = controller;
+    setIsRefining(true);
+    setRefineError(null);
+    setRefinePreview(null);
+    apiClient
+      .post(
+        '/api/caption/refine',
+        { imgPath, currentCaption: caption, userPrompt: refinePrompt, ext: captionExt },
+        { signal: controller.signal },
+      )
+      .then(res => {
+        if (controller.signal.aborted) return;
+        setRefinePreview(res.data?.refined ?? '');
+      })
+      .catch(err => {
+        if (controller.signal.aborted) return;
+        setRefineError(err?.response?.data?.error ?? 'Refinement failed');
+      })
+      .finally(() => {
+        if (!controller.signal.aborted) setIsRefining(false);
+      });
+  }, [imgPath, refinePrompt, isRefining, caption, captionExt]);
+
+  const onAcceptRefine = useCallback(() => {
+    if (refinePreview == null || !imgPath) return;
+    setCaption(refinePreview);
+    saveCaptionForPath(imgPath, refinePreview, savedCaption);
+    setRefinePreview(null);
+    setRefinePrompt('');
+    setRefineError(null);
+  }, [refinePreview, imgPath, savedCaption, saveCaptionForPath]);
+
+  const onDiscardRefine = useCallback(() => {
+    setRefinePreview(null);
+    setRefineError(null);
+  }, []);
 
   // Fetch caption whenever the image changes; save any pending edits on the previous image first
   useEffect(() => {
@@ -554,22 +613,74 @@ export default function DatasetImageViewer({
                   isDirty={!isCaptionCurrent}
                 />
               ) : (
-                <div
-                  className={classNames('flex-1 min-h-[8rem] rounded border-2 bg-gray-900 transition-colors', {
-                    'border-blue-500': !isCaptionCurrent,
-                    'border-gray-700': isCaptionCurrent,
-                  })}
-                >
-                  <textarea
-                    className="w-full h-full bg-transparent text-gray-100 text-sm p-2 resize-none outline-none focus:ring-0 focus:outline-none"
-                    placeholder={isCaptionLoaded ? 'Add a caption...' : 'Loading caption...'}
-                    value={caption}
-                    onChange={e => setCaption(e.target.value)}
-                    onKeyDown={handleCaptionKeyDown}
-                    onBlur={saveCaption}
-                    disabled={!isCaptionLoaded}
-                  />
-                </div>
+                <>
+                  <div
+                    className={classNames('flex-1 min-h-[8rem] rounded border-2 bg-gray-900 transition-colors', {
+                      'border-blue-500': !isCaptionCurrent,
+                      'border-gray-700': isCaptionCurrent,
+                    })}
+                  >
+                    <textarea
+                      className="w-full h-full bg-transparent text-gray-100 text-sm p-2 resize-none outline-none focus:ring-0 focus:outline-none"
+                      placeholder={isCaptionLoaded ? 'Add a caption...' : 'Loading caption...'}
+                      value={caption}
+                      onChange={e => setCaption(e.target.value)}
+                      onKeyDown={handleCaptionKeyDown}
+                      onBlur={saveCaption}
+                      disabled={!isCaptionLoaded}
+                    />
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <div>
+                      <label className="block text-xs text-gray-500 mb-1">LLM refinement prompt</label>
+                      <textarea
+                        className="w-full bg-gray-900 border border-gray-700 rounded text-gray-100 text-sm p-2 resize-none outline-none focus:ring-0 focus:outline-none"
+                        rows={2}
+                        placeholder='e.g. "add information about lighting and camera angle"'
+                        value={refinePrompt}
+                        onChange={e => setRefinePrompt(e.target.value)}
+                        disabled={!isCaptionLoaded}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={onRefine}
+                      disabled={!refinePrompt.trim() || isRefining || !isCaptionLoaded}
+                      className="w-full px-3 py-1.5 bg-gray-800 hover:bg-gray-700 border border-gray-700 rounded text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      {isRefining ? 'Refining…' : 'Refine with LLM'}
+                    </button>
+                    {refineError && <div className="text-xs text-red-400">{refineError}</div>}
+                    {refinePreview != null && (
+                      <div className="border border-blue-500 rounded p-2 bg-gray-900 flex flex-col gap-2">
+                        <div className="text-xs text-gray-400">Suggested caption</div>
+                        <textarea
+                          className="w-full bg-gray-950 text-gray-100 text-sm p-2 rounded resize-none outline-none focus:ring-0 focus:outline-none"
+                          rows={4}
+                          value={refinePreview}
+                          onChange={e => setRefinePreview(e.target.value)}
+                        />
+                        <div className="flex justify-end gap-2">
+                          <button
+                            type="button"
+                            onClick={onDiscardRefine}
+                            className="px-3 py-1 text-sm bg-gray-800 hover:bg-gray-700 rounded border border-gray-700"
+                          >
+                            Discard
+                          </button>
+                          <button
+                            type="button"
+                            onClick={onAcceptRefine}
+                            className="px-3 py-1 text-sm bg-blue-600 hover:bg-blue-500 rounded"
+                          >
+                            Accept
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                </>
               )}
             </div>
           </DialogPanel>
