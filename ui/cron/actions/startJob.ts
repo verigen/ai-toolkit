@@ -3,7 +3,7 @@ import { Job } from '@prisma/client';
 import { spawn } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { TOOLKIT_ROOT, getTrainingFolder, getHFToken, getOpenAIApiKey } from '../paths';
+import { TOOLKIT_ROOT, getTrainingFolder, getHFToken, getOpenAIApiKey, getOpenAIBaseUrl } from '../paths';
 import { resolvePythonPath } from '../pythonPath';
 const isWindows = process.platform === 'win32';
 
@@ -92,6 +92,12 @@ const startAndWatchJob = (job: Job) => {
     const openAIApiKey = await getOpenAIApiKey();
     if (openAIApiKey && openAIApiKey.trim() !== '') {
       additionalEnv.OPENAI_API_KEY = openAIApiKey;
+    }
+
+    // OPENAI_API_BASE_URL (shared by the OpenAI-compatible captioner and the interactive refine feature)
+    const openAIBaseUrl = await getOpenAIBaseUrl();
+    if (openAIBaseUrl && openAIBaseUrl.trim() !== '') {
+      additionalEnv.OPENAI_API_BASE_URL = openAIBaseUrl;
     }
 
     const args = [runFilePath, configPath];

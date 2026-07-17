@@ -32,7 +32,7 @@ export async function POST(request: Request) {
       TRAINING_FOLDER,
       DATASETS_FOLDER,
       OPENAI_API_KEY,
-      OPENAI_REFINE_BASE_URL,
+      OPENAI_API_BASE_URL,
       OPENAI_REFINE_MODEL,
       OPENAI_REFINE_SYSTEM_PROMPT,
     } = body;
@@ -60,9 +60,9 @@ export async function POST(request: Request) {
         create: { key: 'OPENAI_API_KEY', value: OPENAI_API_KEY },
       }),
       prisma.settings.upsert({
-        where: { key: 'OPENAI_REFINE_BASE_URL' },
-        update: { value: OPENAI_REFINE_BASE_URL },
-        create: { key: 'OPENAI_REFINE_BASE_URL', value: OPENAI_REFINE_BASE_URL },
+        where: { key: 'OPENAI_API_BASE_URL' },
+        update: { value: OPENAI_API_BASE_URL },
+        create: { key: 'OPENAI_API_BASE_URL', value: OPENAI_API_BASE_URL },
       }),
       prisma.settings.upsert({
         where: { key: 'OPENAI_REFINE_MODEL' },

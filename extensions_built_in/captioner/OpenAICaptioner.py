@@ -13,8 +13,8 @@ class OpenAICaptionConfig(CaptionConfig):
     def __init__(self, **kwargs):
         # model_name_or_path is reused as the API model name (e.g. "gpt-4o").
         super().__init__(**kwargs)
-        self.api_base_url = kwargs.get("api_base_url", "http://localhost:8080/v1")
-        # Global setting only, same as HF_TOKEN — never part of job config / on disk.
+        # Global settings only, same as HF_TOKEN — never part of job config / on disk.
+        self.api_base_url = os.environ.get("OPENAI_API_BASE_URL") or "http://localhost:8080/v1"
         self.api_key = os.environ.get("OPENAI_API_KEY") or None
         self.request_timeout = kwargs.get("request_timeout", 120)
 

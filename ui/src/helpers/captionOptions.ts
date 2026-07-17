@@ -116,7 +116,6 @@ export const captionerTypes: CaptionOption[] = [
         hideLocalModelOptions: true,
         defaults: {
             'config.process[0].caption.model_name_or_path': ['gpt-4o', defaultNameOrPath],
-            'config.process[0].caption.api_base_url': ['http://localhost:8080/v1', undefined],
             'config.process[0].caption.extensions': [extensionsImage, defaultExtensions],
             'config.process[0].caption.caption_prompt': [defaultImageCaptionPrompt, undefined],
             'config.process[0].caption.max_res': [512, undefined],

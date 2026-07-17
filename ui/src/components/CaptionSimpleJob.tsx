@@ -106,20 +106,12 @@ const CaptionSimpleJob: React.FC<Props> = ({ jobConfig, setJobConfig, gpuIDs, se
         </div>
       )}
       {additionalSections.includes('caption.api_base_url') && (
-        <div className="mt-4">
-          <TextInput
-            label="API Base URL"
-            value={jobConfig.config.process[0].caption.api_base_url || ''}
-            onChange={value => setJobConfig(value, 'config.process[0].caption.api_base_url')}
-            placeholder="http://localhost:8080/v1"
-          />
-          <div className="text-gray-500 text-sm mt-1">
-            If this API requires a key, set it on the{' '}
-            <a href="/settings" target="_blank" rel="noreferrer">
-              Settings
-            </a>{' '}
-            page. It is never stored with this job.
-          </div>
+        <div className="mt-4 text-gray-500 text-sm">
+          This captioner uses the shared OpenAI-Compatible API Base URL and Key configured on the{' '}
+          <a href="/settings" target="_blank" rel="noreferrer">
+            Settings
+          </a>{' '}
+          page.
         </div>
       )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">

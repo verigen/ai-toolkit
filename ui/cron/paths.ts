@@ -24,3 +24,5 @@ export const getTrainingFolder = async () => getSetting('TRAINING_FOLDER', defau
 export const getHFToken = async () => getSetting('HF_TOKEN', '');
 
 export const getOpenAIApiKey = async () => getSetting('OPENAI_API_KEY', '');
+
+export const getOpenAIBaseUrl = async () => getSetting('OPENAI_API_BASE_URL', 'http://localhost:8080/v1');

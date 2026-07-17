@@ -2,7 +2,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
-import { getDatasetsRoot, getOpenAIApiKey, getRefineBaseUrl, getRefineModel, getRefineSystemPrompt } from '@/server/settings';
+import { getDatasetsRoot, getOpenAIApiKey, getOpenAIBaseUrl, getRefineModel, getRefineSystemPrompt } from '@/server/settings';
 
 const contentTypeMap: { [key: string]: string } = {
   '.jpg': 'image/jpeg',
@@ -44,7 +44,7 @@ export async function POST(request: NextRequest) {
   }
 
   const [baseUrl, model, systemPrompt, apiKey] = await Promise.all([
-    getRefineBaseUrl(),
+    getOpenAIBaseUrl(),
     getRefineModel(),
     getRefineSystemPrompt(),
     getOpenAIApiKey(),
