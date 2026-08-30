@@ -1,3 +1,4 @@
+import path from 'path';
 import prisma from '@/server/prisma';
 import { defaultDatasetsFolder, defaultDataRoot } from '@/paths';
 import { defaultTrainFolder } from '@/paths';
@@ -22,15 +23,17 @@ const getCachedSetting = async (key: string, defaultValue: string) => {
   return value;
 };
 
-export const getDatasetsRoot = async () => getCachedSetting('DATASETS_FOLDER', defaultDatasetsFolder);
+// Strip trailing slashes; the routes' `root + path.sep` prefix checks 403
+// on every file if the stored path ends with a separator.
+export const getDatasetsRoot = async () => path.resolve(await getCachedSetting('DATASETS_FOLDER', defaultDatasetsFolder));
 
-export const getTrainingFolder = async () => getCachedSetting('TRAINING_FOLDER', defaultTrainFolder);
+export const getTrainingFolder = async () => path.resolve(await getCachedSetting('TRAINING_FOLDER', defaultTrainFolder));
 
 export const getHFToken = async () => getCachedSetting('HF_TOKEN', '');
 
 export const getOpenAIApiKey = async () => getCachedSetting('OPENAI_API_KEY', '');
 
-export const getDataRoot = async () => getCachedSetting('DATA_ROOT', defaultDataRoot);
+export const getDataRoot = async () => path.resolve(await getCachedSetting('DATA_ROOT', defaultDataRoot));
 
 export const DEFAULT_REFINE_SYSTEM_PROMPT = `You are a professional **image captioner** responsible for refining existing captions.
 

@@ -109,6 +109,26 @@ export default function Settings() {
                   />
                 </div>
 
+                <div>
+                  <label htmlFor="MODELS_PATH" className="block text-sm font-medium mb-2">
+                    Models Folder Path
+                    <div className="text-gray-500 text-sm ml-1">
+                      Some models support loading ComfyUI model weights directly. Models that do will be loaded
+                      from/downloaded to this path. Must be an absolute path. If blank, it will default to the models
+                      folder in the project root.
+                    </div>
+                  </label>
+                  <input
+                    type="text"
+                    id="MODELS_PATH"
+                    name="MODELS_PATH"
+                    value={settings.MODELS_PATH}
+                    onChange={handleChange}
+                    className="w-full px-4 py-2 bg-gray-800 border border-gray-700 rounded-lg focus:ring-2 focus:ring-gray-600 focus:border-transparent"
+                    placeholder="Enter models folder path"
+                  />
+                </div>
+
                 <div className="pt-2 mt-2 border-t border-gray-800">
                   <h2 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">
                     OpenAI-Compatible API

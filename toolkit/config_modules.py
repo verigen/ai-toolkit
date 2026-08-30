@@ -590,6 +590,11 @@ class TrainConfig:
         self.do_guidance_loss = kwargs.get('do_guidance_loss', False)
         self.guidance_loss_target: Union[int, List[int, int]] = kwargs.get('guidance_loss_target', 3.0)
         self.do_guidance_loss_cfg_zero: bool = kwargs.get('do_guidance_loss_cfg_zero', False)
+        # 'constant' uses guidance_loss_target as is. 'sigma' decays the target
+        # toward 1.0 as sigma falls (effective = 1 + (target - 1) * sigma) so the
+        # extrapolation never amplifies the unpredictable fresh-noise term at low
+        # sigma. Needed for guidance-distilled models with no guidance embedding.
+        self.guidance_loss_schedule: str = kwargs.get('guidance_loss_schedule', 'constant')
         self.unconditional_prompt: str = kwargs.get('unconditional_prompt', '')
         if isinstance(self.guidance_loss_target, tuple):
             self.guidance_loss_target = list(self.guidance_loss_target)
@@ -711,11 +716,15 @@ class ModelConfig:
         if self.layer_offloading and self.qtype_te == "qfloat8":
             self.qtype_te = "float8"
             
-        # Mac mps only works with torachao uint
+        # MPS has no fp8 dtype, so qfloat8 has to become an 8 bit integer format.
+        # convrot8, not torchao int8: measured on an M3 against bf16, convrot8
+        # trains at 0.79x and holds 1.04 GB of resident weight where torchao int8
+        # trains at 0.52x and holds 1.21 GB, and convrot8 quantizes in 19ms
+        # against 2.8s. See scripts/test_quantizations.py --device mps.
         if torch.backends.mps.is_available() and self.qtype == "qfloat8":
-            self.qtype = "int8"
+            self.qtype = "convrot8"
         if torch.backends.mps.is_available() and self.qtype_te == "qfloat8":
-            self.qtype_te = "int8"
+            self.qtype_te = "convrot8"
         
         # 0 is off and 1.0 is 100% of the layers
         self.layer_offloading_transformer_percent = kwargs.get("layer_offloading_transformer_percent", 1.0)
@@ -906,6 +915,7 @@ class DatasetConfig:
     """
 
     def __init__(self, **kwargs):
+        self.batch_size: Union[int, None] = kwargs.get('batch_size', None)
         self.type = kwargs.get('type', 'image')  # sd, slider, reference
         # will be legacy
         self.folder_path: str = kwargs.get('folder_path', None)
@@ -915,6 +925,10 @@ class DatasetConfig:
         self.default_caption: str = kwargs.get('default_caption', None)
         # trigger word for just this dataset
         self.trigger_word: str = kwargs.get('trigger_word', None)
+        # set automatically from the train config when diff output preservation is enabled.
+        # the dataset trigger word is replaced with the class in the caption for DOP embeddings
+        self.diff_output_preservation: bool = kwargs.get('diff_output_preservation', False)
+        self.diff_output_preservation_class: str = kwargs.get('diff_output_preservation_class', '')
         random_triggers = kwargs.get('random_triggers', [])
         # if they are a string, load them from a file
         if isinstance(random_triggers, str) and os.path.exists(random_triggers):
@@ -990,6 +1004,9 @@ class DatasetConfig:
         self.cache_latents: bool = kwargs.get('cache_latents', False)
         # cache latents to disk will store them on disk. If both are true, it will save to disk, but keep in memory
         self.cache_latents_to_disk: bool = kwargs.get('cache_latents_to_disk', False)
+        # cache tensors to disk. Useful for saving video files tensors to the disk so we have the clean pixelspace versions of video and audio
+        self.cache_tensors_to_disk: bool = kwargs.get('cache_tensors_to_disk', False)
+        
         self.cache_clip_vision_to_disk: bool = kwargs.get('cache_clip_vision_to_disk', False)
         self.cache_text_embeddings: bool = kwargs.get('cache_text_embeddings', False)
         self.load_image_when_caching_latents: bool = kwargs.get('load_image_when_caching_latents', False)
@@ -1026,6 +1043,8 @@ class DatasetConfig:
 
         self.num_workers: int = kwargs.get('num_workers', 2)
         self.prefetch_factor: int = kwargs.get('prefetch_factor', 2)
+        # threads used to prep (decode/resize) items ahead of the VAE while caching latents
+        self.cache_latents_num_workers: int = kwargs.get('cache_latents_num_workers', min(6, os.cpu_count() or 1))
         self.extra_values: List[float] = kwargs.get('extra_values', [])
         self.square_crop: bool = kwargs.get('square_crop', False)
         # apply same augmentations to control images. Usually want this true unless special case
@@ -1049,6 +1068,11 @@ class DatasetConfig:
         # this wont work with bucketing for now until I can handle this before bucketing.
         self.auto_frame_count: bool = kwargs.get('auto_frame_count', False)
         
+        #  old behavior shrank the video to fit the temporal spacing of the model. Which fits the whole video, but
+        # can lead to fast motion/chipmunking. This will prevent the video from shrinking to fit, and instead, trim
+        # the tail of the video. Usually only a few frames. 
+        self.trim_auto_frame_count_tail: bool = kwargs.get('trim_auto_frame_count_tail', True)
+        
         # debug the frame count and frame selection. You dont need this. It is for debugging.
         self.debug: bool = kwargs.get('debug', False)
         
@@ -1062,7 +1086,7 @@ class DatasetConfig:
         # if true, will use a fask method to get image sizes. This can result in errors. Do not use unless you know what you are doing
         self.fast_image_size: bool = kwargs.get('fast_image_size', False)
         
-        self.do_i2v: bool = kwargs.get('do_i2v', True)  # do image to video on models that are both t2i and i2v capable
+        self.do_i2v: bool = kwargs.get('do_i2v', False)  # do image to video on models that are both t2i and i2v capable
         self.do_audio: bool = kwargs.get('do_audio', False) # load audio from video files for models that support it
         self.audio_preserve_pitch: bool = kwargs.get('audio_preserve_pitch', False) # preserve pitch when stretching audio to fit num_frames
         self.audio_normalize: bool = kwargs.get('audio_normalize', False) # normalize audio volume levels when loading
@@ -1470,11 +1494,6 @@ def validate_configs(
     # see if any datasets are caching text embeddings
     is_caching_text_embeddings = any(dataset.cache_text_embeddings for dataset in dataset_configs)
     if is_caching_text_embeddings:
-        
-        # check if they are doing differential output preservation
-        if train_config.diff_output_preservation:
-            raise ValueError("Cannot use differential output preservation with caching text embeddings. Please set diff_output_preservation to False.")
-    
         # make sure they are all cached
         for dataset in dataset_configs:
             if not dataset.cache_text_embeddings:
@@ -1487,6 +1506,3 @@ def validate_configs(
     
     if train_config.diff_output_preservation and train_config.blank_prompt_preservation:
         raise ValueError("Cannot use both differential output preservation and blank prompt preservation at the same time. Please set one of them to False.")
-    
-    if train_config.batch_size > 1 and any(dataset_config.auto_frame_count for dataset_config in dataset_configs):
-        raise ValueError("Cannot use batch size greater than 1 with auto_frame_count. Please set batch_size to 1 or auto_frame_count to False.")

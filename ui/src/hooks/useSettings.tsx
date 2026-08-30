@@ -11,6 +11,7 @@ export interface Settings {
   OPENAI_API_BASE_URL: string;
   OPENAI_REFINE_MODEL: string;
   OPENAI_REFINE_SYSTEM_PROMPT: string;
+  MODELS_PATH: string;
 }
 
 export default function useSettings() {
@@ -22,6 +23,7 @@ export default function useSettings() {
     OPENAI_API_BASE_URL: '',
     OPENAI_REFINE_MODEL: '',
     OPENAI_REFINE_SYSTEM_PROMPT: '',
+    MODELS_PATH: '',
   });
   const [isSettingsLoaded, setIsLoaded] = useState(false);
   useEffect(() => {
@@ -38,6 +40,7 @@ export default function useSettings() {
           OPENAI_API_BASE_URL: data.OPENAI_API_BASE_URL || '',
           OPENAI_REFINE_MODEL: data.OPENAI_REFINE_MODEL || '',
           OPENAI_REFINE_SYSTEM_PROMPT: data.OPENAI_REFINE_SYSTEM_PROMPT || '',
+          MODELS_PATH: data.MODELS_PATH || '',
         });
         setIsLoaded(true);
       })
