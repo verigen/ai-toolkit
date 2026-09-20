@@ -419,7 +419,7 @@ class Krea2Model(QwenImageVAEHolderMixin, BaseModel):
         generator: torch.Generator,
         extra: dict,
     ):
-        if self.model.device == torch.device("cpu"):
+        if self.model.device != self.device_torch:
             self.model.to(self.device_torch)
 
         sc = self.get_bucket_divisibility()
@@ -564,7 +564,7 @@ class Krea2Model(QwenImageVAEHolderMixin, BaseModel):
         batch: "DataLoaderBatchDTO" = None,
         **kwargs,
     ):
-        if self.model.device == torch.device("cpu"):
+        if self.model.device != self.device_torch:
             self.model.to(self.device_torch)
 
         # Clean reference latents from the batch's control images (if any); they
@@ -639,7 +639,7 @@ class Krea2Model(QwenImageVAEHolderMixin, BaseModel):
         if isinstance(prompt, str):
             prompt = [prompt]
 
-        if self.text_encoder.device == torch.device("cpu"):
+        if self.text_encoder.device != self.device_torch:
             self.text_encoder.to(self.device_torch)
 
         # Normalize control images to a per-prompt list (List[List[Tensor]]).

@@ -32,6 +32,20 @@ def patch_qwen_vl_patch_embed(model) -> int:
     return patched
 
 
+def _resync_buffer_devices(model: torch.nn.Module) -> torch.nn.Module:
+    """Non-persistent RoPE buffers (inv_freq, original_inv_freq) live outside
+    any state_dict, so quantized/low_vram loading -- which places parameters
+    one layer/tensor at a time rather than moving the whole module at once --
+    can leave them stranded on a different device than the model's
+    parameters (see issue #451). Pull any stray buffer back in line after
+    every .to() call."""
+    device = model.device
+    for buf in model.buffers():
+        if buf.device != device:
+            buf.data = buf.data.to(device)
+    return model
+
+
 class Qwen3VLTextEncoder(Qwen3VLForConditionalGeneration, OstrisTransformersMixin):
     """Qwen3-VL conditioning stack (krea2, mageflow, nucleus_image, ideogram4,
     minimax_h3, ...). Loads from a checkpoint's text_encoder/ subfolder or a
@@ -60,6 +74,9 @@ class Qwen3VLTextEncoder(Qwen3VLForConditionalGeneration, OstrisTransformersMixi
         if "lm_head.weight" not in out and embed is not None:
             out["lm_head.weight"] = embed
         return out
+
+    def to(self, *args, **kwargs):
+        return _resync_buffer_devices(super().to(*args, **kwargs))
 
     def drop_vision_tower(self):
         """Text-only conditioning: the vision tower is dead weight — drop it to
@@ -94,6 +111,9 @@ class Qwen3VLModelEncoder(Qwen3VLModel, OstrisTransformersMixin):
     def patch_vision_patch_embed(self) -> int:
         return patch_qwen_vl_patch_embed(self)
 
+    def to(self, *args, **kwargs):
+        return _resync_buffer_devices(super().to(*args, **kwargs))
+
 
 class Qwen3VLTextOnlyEncoder(Qwen3VLTextModel, OstrisTransformersMixin):
     """The Qwen3-VL text tower alone (prx_pixel)."""
@@ -104,3 +124,6 @@ class Qwen3VLTextOnlyEncoder(Qwen3VLTextModel, OstrisTransformersMixin):
     @classmethod
     def get_transformer_block_names(cls):
         return ["layers"]
+
+    def to(self, *args, **kwargs):
+        return _resync_buffer_devices(super().to(*args, **kwargs))
