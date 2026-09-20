@@ -75,7 +75,7 @@ const CaptionSimpleJob: React.FC<Props> = ({ jobConfig, setJobConfig, gpuIDs, se
       </div>
       <div className="mt-4">
         <CreatableSelectInput
-          label="Name or Path"
+          label={selectedCaptionOption?.nameOrPathLabel || 'Name or Path'}
           value={jobConfig.config.process[0].caption.model_name_or_path}
           docKey="config.process[0].caption.model_name_or_path"
           onChange={(value: string | null) => {
@@ -185,22 +185,33 @@ const CaptionSimpleJob: React.FC<Props> = ({ jobConfig, setJobConfig, gpuIDs, se
           />
         </div>
       )}
+      {additionalSections.includes('caption.api_base_url') && (
+        <div className="mt-4 text-gray-500 text-sm">
+          This captioner uses the shared OpenAI-Compatible API Base URL and Key configured on the{' '}
+          <a href="/settings" target="_blank" rel="noreferrer">
+            Settings
+          </a>{' '}
+          page.
+        </div>
+      )}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
         <div>
-          <SelectInput
-            label="Quantize"
-            value={jobConfig.config.process[0].caption.quantize ? jobConfig.config.process[0].caption.qtype : ''}
-            onChange={value => {
-              if (value === '') {
-                setJobConfig(false, 'config.process[0].caption.quantize');
-                value = defaultQtype;
-              } else {
-                setJobConfig(true, 'config.process[0].caption.quantize');
-              }
-              setJobConfig(value, 'config.process[0].caption.qtype');
-            }}
-            options={quantizationOptions}
-          />
+          {!selectedCaptionOption?.hideLocalModelOptions && (
+            <SelectInput
+              label="Quantize"
+              value={jobConfig.config.process[0].caption.quantize ? jobConfig.config.process[0].caption.qtype : ''}
+              onChange={value => {
+                if (value === '') {
+                  setJobConfig(false, 'config.process[0].caption.quantize');
+                  value = defaultQtype;
+                } else {
+                  setJobConfig(true, 'config.process[0].caption.quantize');
+                }
+                setJobConfig(value, 'config.process[0].caption.qtype');
+              }}
+              options={quantizationOptions}
+            />
+          )}
           <div className="mt-4">
             <CreatableSelectInput
               label="Caption Extension"
@@ -278,17 +289,19 @@ const CaptionSimpleJob: React.FC<Props> = ({ jobConfig, setJobConfig, gpuIDs, se
         </div>
         <div>
           <FormGroup label="Options">
-            <Checkbox
-              label="Low VRAM"
-              checked={jobConfig.config.process[0].caption.low_vram}
-              onChange={value => setJobConfig(value, 'config.process[0].caption.low_vram')}
-            />
+            {!selectedCaptionOption?.hideLocalModelOptions && (
+              <Checkbox
+                label="Low VRAM"
+                checked={jobConfig.config.process[0].caption.low_vram}
+                onChange={value => setJobConfig(value, 'config.process[0].caption.low_vram')}
+              />
+            )}
             <Checkbox
               label="Recaption"
               checked={jobConfig.config.process[0].caption.recaption}
               onChange={value => setJobConfig(value, 'config.process[0].caption.recaption')}
             />
-            {!selectedCaptionOption?.noCompile && (
+            {!selectedCaptionOption?.noCompile && !selectedCaptionOption?.hideLocalModelOptions && (
               <Checkbox
                 label="Compile Models"
                 checked={jobConfig.config.process[0].caption.compile || false}

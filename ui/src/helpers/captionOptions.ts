@@ -1,7 +1,7 @@
 import { CloudLora, GroupedSelectOption, SelectOption } from "@/types";
 
 type CaptionGroup = 'image' | 'music' | 'video' | 'image/video' | 'image/video/sound';
-type AdditionalSections = 'caption.model_name_or_path2' | 'caption.caption_prompt' | 'caption.max_res' | 'caption.max_new_tokens' | 'caption.fixed_caption' | 'caption.caption_format' | 'caption.extract_vocals_before_transcribe' | 'caption.keep_timestamps' | 'caption.thinking' | 'caption.batch_size' | 'caption.layer_offloading' | 'caption.mtp' | 'caption.cuda_graph' | 'caption.vision_bf16' | 'caption.video_fps' | 'caption.system_prompt';
+type AdditionalSections = 'caption.model_name_or_path2' | 'caption.caption_prompt' | 'caption.max_res' | 'caption.max_new_tokens' | 'caption.fixed_caption' | 'caption.caption_format' | 'caption.extract_vocals_before_transcribe' | 'caption.keep_timestamps' | 'caption.thinking' | 'caption.batch_size' | 'caption.layer_offloading' | 'caption.mtp' | 'caption.cuda_graph' | 'caption.vision_bf16' | 'caption.video_fps' | 'caption.system_prompt' | 'caption.api_base_url';
 
 export interface CaptionOption {
     name: string;
@@ -21,6 +21,8 @@ export interface CaptionOption {
     additionalSections?: AdditionalSections[];
     name_or_path_options?: SelectOption[];
     name_or_path2_options?: SelectOption[];
+    nameOrPathLabel?: string;
+    hideLocalModelOptions?: boolean;
     // named caption prompts the user can swap between; the picker only shows
     // when there is more than one, and selecting one just fills caption_prompt
     captionPrompts?: { [name: string]: string };
@@ -318,6 +320,31 @@ export const captionerTypes: CaptionOption[] = [
             { value: 'Qwen/Qwen3-VL-30B-A3B-Instruct', label: 'Qwen/Qwen3-VL-30B-A3B-Instruct' },
         ],
         additionalSections: [
+            'caption.caption_prompt',
+            'caption.max_res',
+            'caption.max_new_tokens',
+        ],
+    },
+    {
+        name: 'OpenAICaptioner',
+        label: 'OpenAI Compatible API',
+        group: 'image',
+        hasMultiLinePrompts: true,
+        nameOrPathLabel: 'Model Name',
+        hideLocalModelOptions: true,
+        defaults: {
+            'config.process[0].caption.model_name_or_path': ['gpt-4o', defaultNameOrPath],
+            'config.process[0].caption.extensions': [extensionsImage, defaultExtensions],
+            'config.process[0].caption.caption_prompt': [defaultImageCaptionPrompt, undefined],
+            'config.process[0].caption.max_res': [512, undefined],
+            'config.process[0].caption.max_new_tokens': [256, undefined],
+        },
+        name_or_path_options: [
+            { value: 'gpt-4o', label: 'gpt-4o' },
+            { value: 'gpt-4o-mini', label: 'gpt-4o-mini' },
+        ],
+        additionalSections: [
+            'caption.api_base_url',
             'caption.caption_prompt',
             'caption.max_res',
             'caption.max_new_tokens',

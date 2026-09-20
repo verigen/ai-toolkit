@@ -3,7 +3,7 @@ import { Job } from '@prisma/client';
 import { spawn, ChildProcess } from 'child_process';
 import path from 'path';
 import fs from 'fs';
-import { TOOLKIT_ROOT, getTrainingFolder, getHFToken, getModelsPath } from '../paths';
+import { TOOLKIT_ROOT, getTrainingFolder, getHFToken, getModelsPath, getOpenAIApiKey, getOpenAIBaseUrl } from '../paths';
 import { resolveDetachedPythonPath } from '../pythonPath';
 const isWindows = process.platform === 'win32';
 
@@ -256,6 +256,18 @@ const startAndWatchJob = (job: Job) => {
     const hfToken = await getHFToken();
     if (hfToken && hfToken.trim() !== '') {
       additionalEnv.HF_TOKEN = hfToken;
+    }
+
+    // OPENAI_API_KEY (used by the OpenAI-compatible captioner)
+    const openAIApiKey = await getOpenAIApiKey();
+    if (openAIApiKey && openAIApiKey.trim() !== '') {
+      additionalEnv.OPENAI_API_KEY = openAIApiKey;
+    }
+
+    // OPENAI_API_BASE_URL (shared by the OpenAI-compatible captioner and the interactive refine feature)
+    const openAIBaseUrl = await getOpenAIBaseUrl();
+    if (openAIBaseUrl && openAIBaseUrl.trim() !== '') {
+      additionalEnv.OPENAI_API_BASE_URL = openAIBaseUrl;
     }
 
     // MODELS_PATH - one set in the env always takes precedence (it passes

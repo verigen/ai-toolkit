@@ -13,44 +13,22 @@ if (!process.env.AI_TOOLKIT_QUIET_PATHS) {
   console.log('TOOLKIT_ROOT:', TOOLKIT_ROOT);
 }
 
-export const getTrainingFolder = async () => {
-  const key = 'TRAINING_FOLDER';
+const getSetting = async (key: string, defaultValue: string) => {
   let row = await prisma.settings.findFirst({
-    where: {
-      key: key,
-    },
+    where: { key },
   });
-  let trainingRoot = defaultTrainFolder;
-  if (row?.value && row.value !== '') {
-    trainingRoot = row.value;
-  }
-  return trainingRoot as string;
+  return row?.value && row.value !== '' ? row.value : defaultValue;
 };
 
-export const getHFToken = async () => {
-  const key = 'HF_TOKEN';
-  let row = await prisma.settings.findFirst({
-    where: {
-      key: key,
-    },
-  });
-  let token = '';
-  if (row?.value && row.value !== '') {
-    token = row.value;
-  }
-  return token;
-};
+export const getTrainingFolder = async () => getSetting('TRAINING_FOLDER', defaultTrainFolder);
+
+export const getHFToken = async () => getSetting('HF_TOKEN', '');
+
+export const getOpenAIApiKey = async () => getSetting('OPENAI_API_KEY', '');
+
+export const getOpenAIBaseUrl = async () => getSetting('OPENAI_API_BASE_URL', 'http://localhost:8080/v1');
 
 export const getModelsPath = async () => {
-  const key = 'MODELS_PATH';
-  let row = await prisma.settings.findFirst({
-    where: {
-      key: key,
-    },
-  });
-  let modelsPath = '';
-  if (row?.value && row.value !== '' && row.value !== defaultModelsFolder) {
-    modelsPath = row.value;
-  }
-  return modelsPath;
+  const modelsPath = await getSetting('MODELS_PATH', '');
+  return modelsPath !== defaultModelsFolder ? modelsPath : '';
 };
